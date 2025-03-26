@@ -1,16 +1,22 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/firebaseClient';
+// utils/authMiddleware.js
+const admin = require("firebase-admin");
 
-export async function middleware(req) {
-  const token = req.cookies.get('token');
-  
-  if (req.nextUrl.pathname.startsWith('/dashboard') && !token) {
-    return NextResponse.redirect(new URL('/login', req.url));
+const authMiddleware = async (req, res, next) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Token no proporcionado" });
   }
 
-  return NextResponse.next();
-}
+  const idToken = header.split(" ")[1];
 
-export const config = {
-  matcher: ['/dashboard/:path*', '/profile/:path*', '/progress/:path*'],
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error("Token inválido:", error.message);
+    res.status(401).json({ message: "Token inválido o expirado" });
+  }
 };
+
+module.exports = authMiddleware;

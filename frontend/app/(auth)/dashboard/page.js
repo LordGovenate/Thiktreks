@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import Dashboard from './Dashboard';
 
 export default function DashboardPage() {
   return (
@@ -11,7 +12,9 @@ export default function DashboardPage() {
           ¡Bienvenido a ThikTreks!
         </h1>
 
-        <div className="bg-white rounded-lg shadow-xl p-8 mb-8">
+        <Dashboard />
+
+        <div className="bg-white rounded-lg shadow-xl p-8 mb-8 mt-10">
           <h2 className="text-2xl font-semibold text-gray-700 mb-4">Explora tu aprendizaje:</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Link href="/lessons/math"><Button className="w-full">Matemáticas</Button></Link>
