@@ -1,7 +1,18 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { loginUser } = require('../controllers/userController');
+const userController = require("../controllers/userController");
+const authMiddleware = require("../utils/authMiddleware");
 
-router.post('/login', loginUser);
+// Registro
+router.post("/register", userController.registerUser);
+
+// Lectura
+router.get("/", authMiddleware, userController.getUsers);
+
+// Actualizar por UID
+router.put("/:uid", authMiddleware, userController.updateUser);
+
+// Eliminar por UID
+router.delete("/:uid", authMiddleware, userController.deleteUser);
 
 module.exports = router;

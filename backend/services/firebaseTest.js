@@ -1,5 +1,6 @@
-const { auth } = require("./firebase"); // Asegúrate de importar desde services/firebase.js
+// firebaseTest.js
+const { auth } = require("./services/firebase");
 
 auth.getUserByEmail("usuario@test.com")
   .then(user => console.log("✅ Firebase funciona:", user))
-  .catch(error => console.error("❌ Error en Firebase:", error.message));
+  .catch(error => console.error("❌ Error:", error.message));
