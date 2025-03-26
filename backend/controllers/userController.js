@@ -1,81 +1,71 @@
-// controllers/userController.js
-const { auth } = require("../services/firebase");
-const admin = require("firebase-admin");
+const { db } = require('../services/firebase');
 
-const db = admin.database(); // Si usarás Realtime DB
-
-// Registrar usuario
+// Crear usuario
 const registerUser = async (req, res) => {
+  const { uid, email, displayName, photoURL } = req.body;
+
   try {
-    const { email, password, displayName, photoURL } = req.body;
-
-    // Crear en Firebase Auth
-    const userRecord = await auth.createUser({
-      email,
-      password,
-      displayName,
-      photoURL,
-    });
-
-    // Guardar en Realtime DB
-    await db.ref(`users/${userRecord.uid}`).set({
+    await db.collection('users').doc(uid).set({
       email,
       displayName,
       photoURL,
+      createdAt: new Date().toISOString(),
     });
 
-    res.status(201).json({
-      message: "Usuario registrado correctamente",
-      user: {
-        uid: userRecord.uid,
-        email: userRecord.email,
-        displayName: userRecord.displayName,
-        photoURL: userRecord.photoURL,
-      },
-    });
+    res.status(201).json({ message: 'Usuario registrado en Firestore' });
   } catch (error) {
-    console.error("Error al registrar usuario:", error);
-    res.status(500).json({ message: "Error al registrar usuario", error: error.message });
+    res.status(500).json({ error: 'Error al registrar usuario', details: error.message });
   }
 };
 
 // Obtener todos los usuarios
 const getUsers = async (req, res) => {
   try {
-    const snapshot = await db.ref("users").once("value");
-    const users = snapshot.val() || {};
+    const snapshot = await db.collection('users').get();
+    const users = [];
+
+    snapshot.forEach((doc) => {
+      users.push({ uid: doc.id, ...doc.data() });
+    });
+
     res.json({ users });
   } catch (error) {
-    res.status(500).json({ message: "Error al obtener usuarios", error: error.message });
+    res.status(500).json({ error: 'Error al obtener usuarios', details: error.message });
   }
 };
 
 // Actualizar usuario
 const updateUser = async (req, res) => {
+  const { uid } = req.params;
+  const { displayName, photoURL } = req.body;
+
   try {
-    const { uid } = req.params;
-    const { displayName, photoURL } = req.body;
+    await db.collection('users').doc(uid).update({
+      displayName,
+      photoURL,
+    });
 
-    await db.ref(`users/${uid}`).update({ displayName, photoURL });
-
-    res.json({ message: "Usuario actualizado correctamente" });
+    res.json({ message: 'Usuario actualizado correctamente' });
   } catch (error) {
-    res.status(500).json({ message: "Error al actualizar usuario", error: error.message });
+    res.status(500).json({ error: 'Error al actualizar usuario', details: error.message });
   }
 };
 
 // Eliminar usuario
 const deleteUser = async (req, res) => {
+  const { uid } = req.params;
+
   try {
-    const { uid } = req.params;
-
-    await auth.deleteUser(uid);
-    await db.ref(`users/${uid}`).remove();
-
-    res.json({ message: "Usuario eliminado correctamente" });
+    await db.collection('users').doc(uid).delete();
+    res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
-    res.status(500).json({ message: "Error al eliminar usuario", error: error.message });
+    res.status(500).json({ error: 'Error al eliminar usuario', details: error.message });
   }
 };
 
-module.exports = { registerUser, getUsers, updateUser, deleteUser };
+module.exports = {
+  registerUser,
+  getUsers,
+  updateUser,
+  deleteUser,
+};
