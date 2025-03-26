@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth } from '@/lib/firebaseClient';
+import { auth, db } from '@/lib/firebaseClient';
 import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import LogoutButton from '@/components/auth/LogoutButton';
 import ProgressChart from '@/components/progress/ProgressChart';
 import AchievementList from '@/components/progress/AchievementList';
@@ -10,49 +11,45 @@ import AchievementList from '@/components/progress/AchievementList';
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState('');
-  const [usuarios, setUsuarios] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const [displayName, setDisplayName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const idToken = await user.getIdToken();
         setUser(user);
+        const idToken = await user.getIdToken();
         setToken(idToken);
-        setDisplayName(user.displayName || '');
-        setPhotoURL(user.photoURL || '');
+        console.log("🔐 Token generado:", idToken);
+
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(docRef);
+
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setDisplayName(data.displayName || '');
+            setPhotoURL(data.photoURL || '');
+          } else {
+            setDisplayName(user.displayName || '');
+            setPhotoURL(user.photoURL || '');
+          }
+        } catch (err) {
+          console.error('Error al cargar usuario desde Firestore', err);
+          setDisplayName(user.displayName || '');
+          setPhotoURL(user.photoURL || '');
+        }
       } else {
         setUser(null);
         setToken('');
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (token) {
-      fetch('http://localhost:5000/api/users', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          const usersList = Object.entries(data.users || {}).map(([uid, user]) => ({
-            uid,
-            ...user,
-          }));
-          setUsuarios(usersList);
-        })
-        .catch((err) => console.error('Error al obtener usuarios:', err))
-        .finally(() => setLoading(false));
-    }
-  }, [token]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -128,6 +125,12 @@ const Dashboard = () => {
         >
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
+      </div>
+
+      {/* Token visible para copiar */}
+      <div className="bg-gray-100 rounded p-4 text-sm mb-6 break-all">
+        <strong>Tu JWT Token:</strong><br />
+        {token}
       </div>
 
       {/* Progreso */}

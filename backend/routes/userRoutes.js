@@ -3,16 +3,16 @@ const router = express.Router();
 const userController = require("../controllers/userController");
 const authMiddleware = require("../utils/authMiddleware");
 
-// Registro
+// Registrar usuario
 router.post("/register", userController.registerUser);
 
-// Lectura
+// Obtener todos los usuarios (restringido con token)
 router.get("/", authMiddleware, userController.getUsers);
 
-// Actualizar por UID
+// Actualizar usuario por UID
 router.put("/:uid", authMiddleware, userController.updateUser);
 
-// Eliminar por UID
+// Eliminar usuario por UID
 router.delete("/:uid", authMiddleware, userController.deleteUser);
 
 module.exports = router;
